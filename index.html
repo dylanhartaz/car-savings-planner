@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Car Savings Planner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section id="screen-input" class="screen is-active" aria-labelledby="input-title">
+        <div class="panel intro-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Car savings planner</p>
+              <h1 id="input-title">Build a real plan for your car goal.</h1>
+              <p class="lede">
+                Add your income, expenses, and timeline. The planner will turn the numbers into
+                a clear saving target, weekly tracker, and practical coaching.
+              </p>
+            </div>
+            <button id="view-accomplishments" class="secondary-button hidden" type="button">
+              View wins
+            </button>
+          </div>
+
+          <form id="plan-form" class="form-grid">
+            <label>
+              <span>Paycheck amount</span>
+              <input id="paycheck" type="number" min="0" step="0.01" placeholder="500" required />
+            </label>
+
+            <label>
+              <span>Pay frequency</span>
+              <select id="frequency">
+                <option value="weekly">Every week</option>
+                <option value="biweekly" selected>Every two weeks</option>
+                <option value="twicemonthly">Twice a month</option>
+                <option value="monthly">Once a month</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Car price</span>
+              <input id="car-price" type="number" min="0" step="0.01" placeholder="5000" required />
+            </label>
+
+            <label>
+              <span>Months to save</span>
+              <input id="time-goal" type="number" min="1" step="1" placeholder="12" required />
+            </label>
+
+            <label>
+              <span>Monthly expenses</span>
+              <input id="expenses" type="number" min="0" step="0.01" placeholder="200" />
+            </label>
+
+            <label class="full-span">
+              <span>What makes saving harder?</span>
+              <textarea
+                id="challenges"
+                rows="4"
+                placeholder="Food with friends, impulse buys, gas money, helping family, weekend plans..."
+              ></textarea>
+            </label>
+
+            <button class="primary-button full-span" type="submit">Create my plan</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="screen-plan" class="screen" aria-labelledby="plan-title">
+        <div class="panel">
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Your plan</p>
+              <h1 id="plan-title">Savings roadmap</h1>
+            </div>
+            <button id="edit-plan" class="secondary-button" type="button">Edit numbers</button>
+          </div>
+
+          <div id="stats-grid" class="stats-grid"></div>
+          <div id="plan-output" class="coach-output"></div>
+
+          <div class="action-row">
+            <button id="start-tracking" class="primary-button" type="button">Start tracking</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-tracker" class="screen" aria-labelledby="tracker-title">
+        <div class="tracker-layout">
+          <div class="panel">
+            <div class="panel-header compact">
+              <div>
+                <p class="eyebrow">Progress tracker</p>
+                <h1 id="tracker-title">Stay on pace week by week.</h1>
+              </div>
+              <button id="back-to-plan" class="secondary-button" type="button">View plan</button>
+            </div>
+
+            <div class="progress-card">
+              <div class="progress-copy">
+                <span id="saved-label">$0 saved</span>
+                <span id="goal-label">$0 goal</span>
+              </div>
+              <div class="progress-track" aria-label="Savings progress">
+                <div id="progress-fill" class="progress-fill"></div>
+              </div>
+              <strong id="percent-label">0% complete</strong>
+            </div>
+
+            <div class="button-grid">
+              <button id="open-log" class="primary-button" type="button">Log this week</button>
+              <button id="open-checkin" class="secondary-button" type="button">Weekly check-in</button>
+            </div>
+
+            <div class="history-block">
+              <h2>History</h2>
+              <div id="history-list" class="history-list"></div>
+            </div>
+          </div>
+
+          <aside class="panel sidebar-panel">
+            <h2>Ask the coach</h2>
+            <div id="messages" class="messages"></div>
+            <form id="chat-form" class="chat-form">
+              <input id="chat-input" type="text" placeholder="Ask about your plan..." />
+              <button class="icon-button" type="submit" aria-label="Send message">Send</button>
+            </form>
+          </aside>
+        </div>
+      </section>
+
+      <section id="screen-accomplishments" class="screen" aria-labelledby="wins-title">
+        <div class="panel">
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Completed goals</p>
+              <h1 id="wins-title">Your wins</h1>
+            </div>
+            <button id="new-goal" class="secondary-button" type="button">New goal</button>
+          </div>
+          <div id="wins-list" class="wins-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="log-dialog" class="modal">
+      <form id="log-form" method="dialog" class="modal-inner">
+        <h2 id="log-title">Log week</h2>
+        <fieldset class="segmented">
+          <legend>Did you save this week?</legend>
+          <label>
+            <input type="radio" name="saved" value="yes" checked />
+            <span>Yes</span>
+          </label>
+          <label>
+            <input type="radio" name="saved" value="no" />
+            <span>No</span>
+          </label>
+        </fieldset>
+        <label id="amount-field">
+          <span>Amount saved</span>
+          <input id="log-amount" type="number" min="0" step="0.01" placeholder="75" />
+        </label>
+        <label>
+          <span>Note</span>
+          <textarea id="log-note" rows="3" placeholder="What helped, or what got in the way?"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="secondary-button" value="cancel" type="button" id="cancel-log">Cancel</button>
+          <button class="primary-button" value="default" type="submit">Save log</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="checkin-dialog" class="modal">
+      <div class="modal-inner wide-modal">
+        <h2>Weekly check-in</h2>
+        <div id="checkin-output" class="coach-output"></div>
+        <button id="close-checkin" class="primary-button" type="button">Got it</button>
+      </div>
+    </dialog>
+
+    <dialog id="complete-dialog" class="modal">
+      <div class="modal-inner">
+        <p class="celebration">Goal complete</p>
+        <h2>You saved enough for the car.</h2>
+        <p>
+          That took follow-through. Log it as a completed goal, then start a new one whenever
+          you are ready.
+        </p>
+        <button id="finish-goal" class="primary-button" type="button">Save this win</button>
+      </div>
+    </dialog>
+
+    <script src="script.js"></script>
+  </body>
+</html>
