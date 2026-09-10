@@ -3,6 +3,7 @@ const state = {
   progress: load("carSavingsProgress", []),
   accomplishments: load("carSavingsWins", []),
   messages: [],
+  previousScreen: "input",
 };
 
 const screens = {
@@ -10,7 +11,54 @@ const screens = {
   plan: document.querySelector("#screen-plan"),
   tracker: document.querySelector("#screen-tracker"),
   accomplishments: document.querySelector("#screen-accomplishments"),
+  game: document.querySelector("#screen-game"),
 };
+
+const game = {
+  canvas: document.querySelector("#eco-game"),
+  ctx: document.querySelector("#eco-game").getContext("2d"),
+  running: false,
+  finished: false,
+  score: 0,
+  timeLeft: 45,
+  lane: 1,
+  speed: 2.4,
+  lastTime: 0,
+  spawnTimer: 0,
+  items: [],
+  keys: new Set(),
+};
+
+const upgrades = [
+  {
+    name: "Catalytic converter",
+    detail: "Cuts dirty exhaust from a gas car.",
+    points: 40,
+    symbol: "CC",
+    kind: "converter",
+  },
+  {
+    name: "Low rolling tires",
+    detail: "Helps the car use less energy.",
+    points: 90,
+    symbol: "T",
+    kind: "tire",
+  },
+  {
+    name: "Hybrid battery",
+    detail: "Adds electric support for city driving.",
+    points: 150,
+    symbol: "HB",
+    kind: "battery",
+  },
+  {
+    name: "Electric motor",
+    detail: "Turns the car fully electric.",
+    points: 230,
+    symbol: "EV",
+    kind: "motor",
+  },
+];
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -35,6 +83,11 @@ function showScreen(name) {
   screens[name].classList.add("is-active");
   window.scrollTo({ top: 0, behavior: "smooth" });
   renderAccomplishmentButton();
+  if (name === "game") {
+    renderGame();
+  } else {
+    game.running = false;
+  }
 }
 
 function monthlyIncome(paycheck, frequency) {
@@ -253,6 +306,373 @@ function renderWins() {
     .join("");
 }
 
+function openGame(fromScreen) {
+  state.previousScreen = fromScreen;
+  resetGame();
+  showScreen("game");
+}
+
+function resetGame() {
+  game.running = false;
+  game.finished = false;
+  game.score = 0;
+  game.timeLeft = 45;
+  game.lane = 1;
+  game.speed = 2.4;
+  game.lastTime = 0;
+  game.spawnTimer = 0;
+  game.items = [];
+  document.querySelector("#start-game").textContent = "Play";
+  renderGameHud();
+  renderUpgrades();
+  renderGame();
+}
+
+function startGame() {
+  if (game.running) return;
+  if (game.finished || game.timeLeft <= 0) resetGame();
+  game.running = true;
+  document.querySelector("#start-game").textContent = "Playing";
+  requestAnimationFrame(tickGame);
+}
+
+function moveCar(direction) {
+  game.lane = Math.max(0, Math.min(2, game.lane + direction));
+  renderGame();
+}
+
+function tickGame(timestamp) {
+  if (!game.running) return;
+  if (!game.lastTime) game.lastTime = timestamp;
+  const delta = Math.min(40, timestamp - game.lastTime);
+  game.lastTime = timestamp;
+  game.timeLeft = Math.max(0, game.timeLeft - delta / 1000);
+  game.spawnTimer -= delta;
+
+  if (game.spawnTimer <= 0) {
+    spawnItem();
+    game.spawnTimer = Math.max(520, 1000 - game.score * 1.6);
+  }
+
+  game.items.forEach((item) => {
+    item.y += game.speed * (delta / 16.67);
+  });
+  checkCollisions();
+  game.items = game.items.filter((item) => !item.hit && item.y < game.canvas.height + 60);
+  game.speed = 2.4 + game.score / 180;
+  renderGameHud();
+  renderGame();
+
+  if (game.timeLeft <= 0) {
+    endGame();
+    return;
+  }
+  requestAnimationFrame(tickGame);
+}
+
+function spawnItem() {
+  const lane = Math.floor(Math.random() * 3);
+  const upgradeChance = Math.random() > 0.34;
+  const upgradeIndex = Math.min(upgrades.length - 1, Math.floor(game.score / 70));
+  const upgrade = upgrades[upgradeIndex];
+  game.items.push({
+    lane,
+    y: -42,
+    type: upgradeChance ? "upgrade" : "gas",
+    label: upgradeChance ? upgrade.symbol : "GAS",
+    name: upgradeChance ? upgrade.name : "Gas can",
+    kind: upgradeChance ? upgrade.kind : "gas",
+    upgradeIndex,
+  });
+}
+
+function checkCollisions() {
+  const carY = game.canvas.height - 92;
+  game.items.forEach((item) => {
+    if (item.hit) return;
+    if (item.lane === game.lane && Math.abs(item.y - carY) < 42) {
+      item.hit = true;
+      if (item.type === "upgrade") {
+        game.score += 25;
+      } else {
+        game.score = Math.max(0, game.score - 20);
+      }
+      renderUpgrades();
+    }
+  });
+  game.items = game.items.filter((item) => !item.hit);
+}
+
+function endGame() {
+  game.running = false;
+  game.finished = true;
+  document.querySelector("#start-game").textContent = "Play again";
+  renderGame();
+}
+
+function earnedUpgradeCount() {
+  return upgrades.filter((upgrade) => game.score >= upgrade.points).length;
+}
+
+function renderGameHud() {
+  const earned = earnedUpgradeCount();
+  const levelNames = ["Gas car", "Cleaner gas car", "Efficient gas car", "Hybrid car", "Electric car"];
+  document.querySelector("#game-score").textContent = `Score ${game.score}`;
+  document.querySelector("#game-level").textContent = levelNames[earned];
+  document.querySelector("#game-timer").textContent = `${Math.ceil(game.timeLeft)}s`;
+}
+
+function renderUpgrades() {
+  const list = document.querySelector("#upgrade-list");
+  list.innerHTML = upgrades
+    .map(
+      (upgrade) => `
+        <article class="upgrade-item ${game.score >= upgrade.points ? "is-earned" : ""}">
+          <div class="upgrade-icon">${upgrade.symbol}</div>
+          <div>
+            <strong>${upgrade.name}</strong>
+            <span>${upgrade.detail}</span>
+          </div>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderGame() {
+  const { ctx, canvas } = game;
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.fillStyle = "#f0fbf4";
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = "#cfeedd";
+  ctx.fillRect(0, 0, 96, h);
+  ctx.fillRect(w - 96, 0, 96, h);
+
+  ctx.fillStyle = "#26312c";
+  roundRect(ctx, 112, 0, w - 224, h, 26);
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+  ctx.lineWidth = 6;
+  ctx.setLineDash([26, 24]);
+  [w / 2 - 78, w / 2 + 78].forEach((x) => {
+    ctx.beginPath();
+    ctx.moveTo(x, -20);
+    ctx.lineTo(x, h + 20);
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  game.items.forEach(drawItem);
+  drawCar();
+
+  if (!game.running) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.84)";
+    roundRect(ctx, 150, 138, w - 300, 150, 24);
+    ctx.fill();
+    ctx.fillStyle = "#101312";
+    ctx.textAlign = "center";
+    ctx.font = "900 28px system-ui";
+    ctx.fillText(game.finished ? "Nice drive." : "Ready to drive?", w / 2, 190);
+    ctx.font = "700 17px system-ui";
+    const message =
+      earnedUpgradeCount() === upgrades.length
+        ? "You built a fully electric ride."
+        : "Collect upgrades. Dodge gas cans.";
+    ctx.fillText(message, w / 2, 226);
+  }
+}
+
+function drawCar() {
+  const laneX = [220, 360, 500][game.lane];
+  const y = game.canvas.height - 92;
+  const earned = earnedUpgradeCount();
+  const carColor = earned >= 4 ? "#29c77f" : earned >= 3 ? "#4fbf8b" : "#ffffff";
+
+  const ctx = game.ctx;
+  ctx.save();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
+  roundRect(ctx, laneX - 52, y + 34, 104, 14, 8);
+  ctx.fill();
+
+  ctx.fillStyle = carColor;
+  roundRect(ctx, laneX - 48, y - 18, 96, 48, 16);
+  ctx.fill();
+  ctx.strokeStyle = "#101312";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = earned >= 4 ? "#bff4df" : "#dff6e8";
+  roundRect(ctx, laneX - 28, y - 35, 56, 25, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#101312";
+  ctx.beginPath();
+  ctx.arc(laneX - 32, y + 28, 12, 0, Math.PI * 2);
+  ctx.arc(laneX + 32, y + 28, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(laneX - 32, y + 28, 5, 0, Math.PI * 2);
+  ctx.arc(laneX + 32, y + 28, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (earned >= 4) {
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 18px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("EV", laneX, y + 11);
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(laneX + 45, y - 7);
+    ctx.lineTo(laneX + 58, y - 15);
+    ctx.lineTo(laneX + 51, y + 2);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = "#167046";
+    ctx.font = "900 15px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("CAR", laneX, y + 10);
+  }
+  ctx.restore();
+}
+
+function drawItem(item) {
+  const laneX = [220, 360, 500][item.lane];
+  const ctx = game.ctx;
+  ctx.save();
+  ctx.translate(laneX, item.y);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.14)";
+  roundRect(ctx, -27, 28, 54, 8, 5);
+  ctx.fill();
+
+  if (item.kind === "converter") drawCatalyticConverter(ctx);
+  if (item.kind === "tire") drawEcoTire(ctx);
+  if (item.kind === "battery") drawHybridBattery(ctx);
+  if (item.kind === "motor") drawElectricMotor(ctx);
+  if (item.kind === "gas") drawGasCan(ctx);
+
+  ctx.restore();
+}
+
+function drawCatalyticConverter(ctx) {
+  ctx.fillStyle = "#dff6e8";
+  roundRect(ctx, -31, -13, 62, 26, 12);
+  ctx.fill();
+  ctx.strokeStyle = "#167046";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, -15, -22, 30, 44, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "#0a3d29";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-42, 0);
+  ctx.lineTo(-31, 0);
+  ctx.moveTo(31, 0);
+  ctx.lineTo(42, 0);
+  ctx.stroke();
+}
+
+function drawEcoTire(ctx) {
+  ctx.fillStyle = "#101312";
+  ctx.beginPath();
+  ctx.arc(0, 0, 29, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(0, 0, 18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#1f8a55";
+  ctx.beginPath();
+  ctx.arc(0, 0, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#1f8a55";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-3, -30);
+  ctx.quadraticCurveTo(18, -40, 30, -20);
+  ctx.quadraticCurveTo(10, -22, -3, -30);
+  ctx.stroke();
+}
+
+function drawHybridBattery(ctx) {
+  ctx.fillStyle = "#dff6e8";
+  roundRect(ctx, -32, -22, 64, 44, 10);
+  ctx.fill();
+  ctx.strokeStyle = "#167046";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "#167046";
+  roundRect(ctx, 32, -8, 8, 16, 4);
+  ctx.fill();
+  ctx.font = "900 24px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText("+", -12, 8);
+  ctx.fillText("-", 14, 7);
+}
+
+function drawElectricMotor(ctx) {
+  ctx.fillStyle = "#ffffff";
+  roundRect(ctx, -32, -24, 64, 48, 14);
+  ctx.fill();
+  ctx.strokeStyle = "#167046";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "#1f8a55";
+  ctx.font = "900 18px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText("EV", 0, 7);
+  ctx.strokeStyle = "#1f8a55";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-42, -3);
+  ctx.lineTo(-32, -3);
+  ctx.moveTo(32, -3);
+  ctx.lineTo(42, -3);
+  ctx.stroke();
+}
+
+function drawGasCan(ctx) {
+  ctx.fillStyle = "#ffe5df";
+  roundRect(ctx, -26, -25, 45, 52, 8);
+  ctx.fill();
+  ctx.strokeStyle = "#9b2c1f";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "#9b2c1f";
+  roundRect(ctx, -12, -34, 22, 12, 5);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(16, -20);
+  ctx.lineTo(34, -12);
+  ctx.lineTo(30, -4);
+  ctx.lineTo(18, -10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "900 13px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText("GAS", -3, 5);
+}
+
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
+}
+
 document.querySelector("#plan-form").addEventListener("submit", (event) => {
   event.preventDefault();
   state.userData = {
@@ -288,6 +708,28 @@ document.querySelector("#view-accomplishments").addEventListener("click", () => 
   showScreen("accomplishments");
 });
 document.querySelector("#new-goal").addEventListener("click", () => showScreen("input"));
+document.querySelector("#open-game-from-home").addEventListener("click", () => openGame("input"));
+document.querySelector("#open-game-from-tracker").addEventListener("click", () => openGame("tracker"));
+document.querySelector("#exit-game").addEventListener("click", () => showScreen(state.previousScreen));
+document.querySelector("#start-game").addEventListener("click", startGame);
+document.querySelector("#move-left").addEventListener("click", () => moveCar(-1));
+document.querySelector("#move-right").addEventListener("click", () => moveCar(1));
+
+window.addEventListener("keydown", (event) => {
+  if (!screens.game.classList.contains("is-active")) return;
+  const key = event.key.toLowerCase();
+  if (["arrowleft", "arrowright", "a", "d"].includes(key)) {
+    event.preventDefault();
+    if (event.repeat || game.keys.has(key)) return;
+    game.keys.add(key);
+    if (key === "arrowleft" || key === "a") moveCar(-1);
+    if (key === "arrowright" || key === "d") moveCar(1);
+  }
+});
+
+window.addEventListener("keyup", (event) => {
+  game.keys.delete(event.key.toLowerCase());
+});
 
 document.querySelector("#open-log").addEventListener("click", () => {
   document.querySelector("#log-dialog").showModal();
@@ -359,3 +801,5 @@ document.querySelector("#chat-form").addEventListener("submit", (event) => {
 });
 
 renderAccomplishmentButton();
+renderUpgrades();
+renderGame();
