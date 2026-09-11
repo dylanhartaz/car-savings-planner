@@ -35,28 +35,28 @@ const upgrades = [
   {
     name: "Catalytic converter",
     detail: "Cuts dirty exhaust from a gas car.",
-    points: 40,
+    points: 125,
     symbol: "CC",
     kind: "converter",
   },
   {
     name: "Low rolling tires",
     detail: "Helps the car use less energy.",
-    points: 90,
+    points: 275,
     symbol: "T",
     kind: "tire",
   },
   {
     name: "Hybrid battery",
     detail: "Adds electric support for city driving.",
-    points: 150,
+    points: 475,
     symbol: "HB",
     kind: "battery",
   },
   {
     name: "Electric motor",
     detail: "Turns the car fully electric.",
-    points: 230,
+    points: 700,
     symbol: "EV",
     kind: "motor",
   },
@@ -364,7 +364,7 @@ function tickGame(timestamp) {
 
   if (game.spawnTimer <= 0) {
     spawnItem();
-    game.spawnTimer = Math.max(520, 1000 - game.score * 1.6);
+    game.spawnTimer = Math.max(540, 980 - game.score * 0.65);
   }
 
   game.items.forEach((item) => {
@@ -386,7 +386,7 @@ function tickGame(timestamp) {
 function spawnItem() {
   const lane = Math.floor(Math.random() * 3);
   const upgradeChance = Math.random() > 0.34;
-  const upgradeIndex = Math.min(upgrades.length - 1, Math.floor(game.score / 70));
+  const upgradeIndex = Math.min(upgrades.length - 1, earnedUpgradeCount());
   const upgrade = upgrades[upgradeIndex];
   game.items.push({
     lane,
@@ -406,9 +406,9 @@ function checkCollisions() {
     if (item.lane === game.lane && Math.abs(item.y - carY) < 42) {
       item.hit = true;
       if (item.type === "upgrade") {
-        game.score += 25;
+        game.score += 20;
       } else {
-        game.score = Math.max(0, game.score - 20);
+        game.score = Math.max(0, game.score - 15);
       }
       renderUpgrades();
     }
