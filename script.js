@@ -364,7 +364,7 @@ function tickGame(timestamp) {
 
   if (game.spawnTimer <= 0) {
     spawnItem();
-    game.spawnTimer = Math.max(540, 980 - game.score * 0.65);
+    game.spawnTimer = Math.max(520, 1000 - game.score * 1.6);
   }
 
   game.items.forEach((item) => {
@@ -406,9 +406,9 @@ function checkCollisions() {
     if (item.lane === game.lane && Math.abs(item.y - carY) < 42) {
       item.hit = true;
       if (item.type === "upgrade") {
-        game.score += 20;
+        game.score += 25;
       } else {
-        game.score = Math.max(0, game.score - 15);
+        game.score = Math.max(0, game.score - 20);
       }
       renderUpgrades();
     }
