@@ -14,9 +14,11 @@ const screens = {
   game: document.querySelector("#screen-game"),
 };
 
+const gameCanvas = document.querySelector("#eco-game");
+
 const game = {
-  canvas: document.querySelector("#eco-game"),
-  ctx: document.querySelector("#eco-game").getContext("2d"),
+  canvas: gameCanvas,
+  ctx: gameCanvas ? gameCanvas.getContext("2d") : null,
   running: false,
   finished: false,
   score: 0,
@@ -76,6 +78,11 @@ function load(key, fallback) {
 
 function save(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function on(selector, eventName, handler) {
+  const element = document.querySelector(selector);
+  if (element) element.addEventListener(eventName, handler);
 }
 
 function showScreen(name) {
@@ -307,6 +314,10 @@ function renderWins() {
 }
 
 function openGame(fromScreen) {
+  if (!screens.game || !game.canvas) {
+    alert("The game files are not fully uploaded yet. Please upload index.html, styles.css, and script.js together.");
+    return;
+  }
   state.previousScreen = fromScreen;
   resetGame();
   showScreen("game");
@@ -322,7 +333,8 @@ function resetGame() {
   game.lastTime = 0;
   game.spawnTimer = 0;
   game.items = [];
-  document.querySelector("#start-game").textContent = "Play";
+  const startButton = document.querySelector("#start-game");
+  if (startButton) startButton.textContent = "Play";
   renderGameHud();
   renderUpgrades();
   renderGame();
@@ -332,7 +344,8 @@ function startGame() {
   if (game.running) return;
   if (game.finished || game.timeLeft <= 0) resetGame();
   game.running = true;
-  document.querySelector("#start-game").textContent = "Playing";
+  const startButton = document.querySelector("#start-game");
+  if (startButton) startButton.textContent = "Playing";
   requestAnimationFrame(tickGame);
 }
 
@@ -406,7 +419,8 @@ function checkCollisions() {
 function endGame() {
   game.running = false;
   game.finished = true;
-  document.querySelector("#start-game").textContent = "Play again";
+  const startButton = document.querySelector("#start-game");
+  if (startButton) startButton.textContent = "Play again";
   renderGame();
 }
 
@@ -415,6 +429,7 @@ function earnedUpgradeCount() {
 }
 
 function renderGameHud() {
+  if (!document.querySelector("#game-score")) return;
   const earned = earnedUpgradeCount();
   const levelNames = ["Gas car", "Cleaner gas car", "Efficient gas car", "Hybrid car", "Electric car"];
   document.querySelector("#game-score").textContent = `Score ${game.score}`;
@@ -424,6 +439,7 @@ function renderGameHud() {
 
 function renderUpgrades() {
   const list = document.querySelector("#upgrade-list");
+  if (!list) return;
   list.innerHTML = upgrades
     .map(
       (upgrade) => `
@@ -440,6 +456,7 @@ function renderUpgrades() {
 }
 
 function renderGame() {
+  if (!game.ctx || !game.canvas) return;
   const { ctx, canvas } = game;
   const w = canvas.width;
   const h = canvas.height;
@@ -708,12 +725,12 @@ document.querySelector("#view-accomplishments").addEventListener("click", () => 
   showScreen("accomplishments");
 });
 document.querySelector("#new-goal").addEventListener("click", () => showScreen("input"));
-document.querySelector("#open-game-from-home").addEventListener("click", () => openGame("input"));
-document.querySelector("#open-game-from-tracker").addEventListener("click", () => openGame("tracker"));
-document.querySelector("#exit-game").addEventListener("click", () => showScreen(state.previousScreen));
-document.querySelector("#start-game").addEventListener("click", startGame);
-document.querySelector("#move-left").addEventListener("click", () => moveCar(-1));
-document.querySelector("#move-right").addEventListener("click", () => moveCar(1));
+on("#open-game-from-home", "click", () => openGame("input"));
+on("#open-game-from-tracker", "click", () => openGame("tracker"));
+on("#exit-game", "click", () => showScreen(state.previousScreen));
+on("#start-game", "click", startGame);
+on("#move-left", "click", () => moveCar(-1));
+on("#move-right", "click", () => moveCar(1));
 
 window.addEventListener("keydown", (event) => {
   if (!screens.game.classList.contains("is-active")) return;

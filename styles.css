@@ -75,6 +75,7 @@ button {
 .panel-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 24px;
   margin-bottom: 28px;
 }
@@ -321,6 +322,10 @@ textarea:focus {
   gap: 14px;
 }
 
+.button-grid .secondary-button:last-child {
+  grid-column: 1 / -1;
+}
+
 .history-block {
   margin-top: 28px;
 }
@@ -473,9 +478,124 @@ textarea:focus {
   letter-spacing: 0.08em;
 }
 
+.game-panel {
+  overflow: hidden;
+}
+
+.game-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 22px;
+  align-items: stretch;
+}
+
+.road-wrap {
+  display: grid;
+  gap: 14px;
+}
+
+.game-hud {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.game-hud span {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--black);
+  font-weight: 900;
+}
+
+.eco-game {
+  width: 100%;
+  aspect-ratio: 72 / 46;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #eefbf2, #ffffff);
+  box-shadow: inset 0 0 0 6px rgba(223, 246, 232, 0.6);
+}
+
+.game-controls {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 12px;
+}
+
+.game-side {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--white);
+  padding: 20px;
+}
+
+.upgrade-list {
+  display: grid;
+  gap: 10px;
+}
+
+.upgrade-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 12px;
+  background: var(--green-50);
+}
+
+.upgrade-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--green-800);
+  font-weight: 950;
+}
+
+.upgrade-item.is-earned {
+  border-color: var(--green-600);
+  background: var(--green-100);
+}
+
+.upgrade-item strong,
+.upgrade-item span {
+  display: block;
+}
+
+.upgrade-item span {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.game-tip {
+  border-radius: 18px;
+  background: var(--green-950);
+  color: var(--white);
+  padding: 16px;
+}
+
+.game-tip p {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.55;
+}
+
 @media (max-width: 900px) {
   .tracker-layout,
-  .stats-grid {
+  .stats-grid,
+  .game-layout {
     grid-template-columns: 1fr;
   }
 
@@ -497,11 +617,20 @@ textarea:focus {
 
   .form-grid,
   .button-grid,
-  .modal-actions {
+  .modal-actions,
+  .game-hud {
     grid-template-columns: 1fr;
+  }
+
+  .button-grid .secondary-button:last-child {
+    grid-column: auto;
   }
 
   .messages {
     height: 300px;
+  }
+
+  .game-controls {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

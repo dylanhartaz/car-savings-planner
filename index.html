@@ -22,6 +22,9 @@
             <button id="view-accomplishments" class="secondary-button hidden" type="button">
               View wins
             </button>
+            <button id="open-game-from-home" class="primary-button" type="button">
+              Play
+            </button>
           </div>
 
           <form id="plan-form" class="form-grid">
@@ -113,6 +116,7 @@
             <div class="button-grid">
               <button id="open-log" class="primary-button" type="button">Log this week</button>
               <button id="open-checkin" class="secondary-button" type="button">Weekly check-in</button>
+              <button id="open-game-from-tracker" class="secondary-button" type="button">Play eco drive</button>
             </div>
 
             <div class="history-block">
@@ -142,6 +146,53 @@
             <button id="new-goal" class="secondary-button" type="button">New goal</button>
           </div>
           <div id="wins-list" class="wins-list"></div>
+        </div>
+      </section>
+
+      <section id="screen-game" class="screen" aria-labelledby="game-title">
+        <div class="panel game-panel">
+          <div class="panel-header compact">
+            <div>
+              <p class="eyebrow">Eco drive game</p>
+              <h1 id="game-title">Upgrade your car into a cleaner ride.</h1>
+              <p class="lede">
+                Steer across the road, collect eco upgrades, and dodge gas cans. Every clean
+                upgrade makes your car more environmentally friendly.
+              </p>
+            </div>
+            <button id="exit-game" class="secondary-button" type="button">Back</button>
+          </div>
+
+          <div class="game-layout">
+            <div class="road-wrap">
+              <div class="game-hud">
+                <span id="game-score">Score 0</span>
+                <span id="game-level">Gas car</span>
+                <span id="game-timer">45s</span>
+              </div>
+              <canvas
+                id="eco-game"
+                class="eco-game"
+                width="720"
+                height="460"
+                aria-label="Driving game where you collect car upgrades"
+              ></canvas>
+              <div class="game-controls" aria-label="Game controls">
+                <button id="move-left" class="secondary-button" type="button">Left</button>
+                <button id="start-game" class="primary-button" type="button">Play</button>
+                <button id="move-right" class="secondary-button" type="button">Right</button>
+              </div>
+            </div>
+
+            <aside class="game-side">
+              <h2>Upgrade path</h2>
+              <div id="upgrade-list" class="upgrade-list"></div>
+              <div class="game-tip">
+                <strong>How to play</strong>
+                <p>Use Left and Right arrow keys, A/D, or the buttons. Collect upgrades and avoid gas cans.</p>
+              </div>
+            </aside>
+          </div>
         </div>
       </section>
     </main>
